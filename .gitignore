@@ -243,3 +243,6 @@ gradle-app.setting
 *.hprof
 
 # End of https://www.toptal.com/developers/gitignore/api/eclipse,visualstudiocode,java,git,gradle,intellij+all
+
+data
+.vscode
