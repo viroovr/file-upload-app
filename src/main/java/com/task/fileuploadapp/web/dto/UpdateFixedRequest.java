@@ -1,4 +1,4 @@
-﻿package com.task.fileuploadapp.web.dto;
+package com.task.fileuploadapp.web.dto;
 
 public class UpdateFixedRequest {
 

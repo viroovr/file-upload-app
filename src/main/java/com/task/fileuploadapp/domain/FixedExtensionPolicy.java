@@ -1,4 +1,4 @@
-﻿package com.task.fileuploadapp.domain;
+package com.task.fileuploadapp.domain;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

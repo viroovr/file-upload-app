@@ -1,4 +1,4 @@
-﻿package com.task.fileuploadapp.service.exception;
+package com.task.fileuploadapp.service.exception;
 
 public class BadRequestException extends RuntimeException {
 

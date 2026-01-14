@@ -1,4 +1,4 @@
-﻿package com.task.fileuploadapp.web;
+package com.task.fileuploadapp.web;
 
 import org.springframework.web.bind.annotation.*;
 
