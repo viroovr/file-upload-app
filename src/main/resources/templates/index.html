@@ -1,0 +1,265 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Blocked Extension Policy</title>
+    <style>
+        :root {
+            --bg: #f6f4ef;
+            --ink: #1f2933;
+            --accent: #0f766e;
+            --muted: #6b7280;
+            --card: #ffffff;
+            --danger: #b91c1c;
+        }
+        body {
+            margin: 0;
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(180deg, #fdfcf9 0%, #f2efe9 100%);
+            color: var(--ink);
+        }
+        .container {
+            max-width: 960px;
+            margin: 40px auto;
+            padding: 0 20px 60px;
+        }
+        header {
+            margin-bottom: 24px;
+        }
+        header h1 {
+            font-size: 28px;
+            margin: 0 0 6px;
+        }
+        header p {
+            margin: 0;
+            color: var(--muted);
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .card {
+            background: var(--card);
+            border-radius: 12px;
+            box-shadow: 0 8px 20px rgba(31, 41, 51, 0.08);
+            padding: 18px;
+        }
+        .card h2 {
+            margin-top: 0;
+            font-size: 18px;
+        }
+        .fixed-list {
+            display: grid;
+            gap: 8px;
+        }
+        .fixed-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border: 1px solid #e5e7eb;
+            padding: 8px 10px;
+            border-radius: 8px;
+        }
+        .fixed-item label {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            font-weight: 600;
+        }
+        .muted {
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .custom-input {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .custom-input input {
+            flex: 1;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #d1d5db;
+        }
+        .custom-input button {
+            padding: 8px 14px;
+            border-radius: 8px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .custom-list {
+            display: grid;
+            gap: 8px;
+            max-height: 360px;
+            overflow-y: auto;
+        }
+        .custom-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid #e5e7eb;
+            padding: 8px 10px;
+            border-radius: 8px;
+        }
+        .custom-item button {
+            border: none;
+            background: transparent;
+            color: var(--danger);
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #fef2f2;
+            color: var(--danger);
+            display: none;
+        }
+        .status.show {
+            display: block;
+        }
+        .info {
+            font-size: 12px;
+            color: var(--muted);
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <header>
+        <h1>Blocked Extension Policy</h1>
+        <p>Toggle fixed extensions and manage custom extensions in one place.</p>
+    </header>
+
+    <div class="grid">
+        <section class="card">
+            <h2>Fixed Extensions</h2>
+            <div class="fixed-list" id="fixedList"></div>
+            <p class="info">Fixed extensions are not shown in the custom list.</p>
+        </section>
+
+        <section class="card">
+            <h2>Custom Extensions</h2>
+            <div class="custom-input">
+                <input id="customInput" type="text" maxlength="20" placeholder="e.g. zip" />
+                <button id="addCustomButton">Add</button>
+            </div>
+            <div class="muted" id="customCount">0 / 200</div>
+            <div class="custom-list" id="customList"></div>
+            <div class="status" id="statusBox"></div>
+        </section>
+    </div>
+</div>
+
+<script>
+    const fixedList = document.getElementById('fixedList');
+    const customList = document.getElementById('customList');
+    const customCount = document.getElementById('customCount');
+    const statusBox = document.getElementById('statusBox');
+    const customInput = document.getElementById('customInput');
+    const addCustomButton = document.getElementById('addCustomButton');
+
+    function showError(message) {
+        statusBox.textContent = message;
+        statusBox.classList.add('show');
+        setTimeout(() => statusBox.classList.remove('show'), 4000);
+    }
+
+    async function loadFixed() {
+        const response = await fetch('/api/v1/extensions/fixed');
+        const data = await response.json();
+        fixedList.innerHTML = '';
+        data.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'fixed-item';
+            const label = document.createElement('label');
+            const checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.checked = item.enabled;
+            checkbox.addEventListener('change', async () => {
+                try {
+                    const res = await fetch(`/api/v1/extensions/fixed/${item.extension}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ enabled: checkbox.checked })
+                    });
+                    if (!res.ok) {
+                        const err = await res.json();
+                        showError(err.message || 'Failed to update.');
+                        checkbox.checked = !checkbox.checked;
+                    }
+                } catch (err) {
+                    showError('Network error.');
+                    checkbox.checked = !checkbox.checked;
+                }
+            });
+            const name = document.createElement('span');
+            name.textContent = item.extension;
+            label.appendChild(checkbox);
+            label.appendChild(name);
+            row.appendChild(label);
+            fixedList.appendChild(row);
+        });
+    }
+
+    async function loadCustom() {
+        const response = await fetch('/api/v1/extensions/custom');
+        const data = await response.json();
+        customList.innerHTML = '';
+        data.forEach(item => {
+            const row = document.createElement('div');
+            row.className = 'custom-item';
+            const name = document.createElement('span');
+            name.textContent = item.extension;
+            const btn = document.createElement('button');
+            btn.textContent = 'X';
+            btn.addEventListener('click', async () => {
+                const res = await fetch(`/api/v1/extensions/custom/${item.id}`, { method: 'DELETE' });
+                if (res.ok) {
+                    await loadCustom();
+                } else {
+                    const err = await res.json();
+                    showError(err.message || 'Failed to delete.');
+                }
+            });
+            row.appendChild(name);
+            row.appendChild(btn);
+            customList.appendChild(row);
+        });
+        customCount.textContent = `${data.length} / 200`;
+    }
+
+    addCustomButton.addEventListener('click', async () => {
+        const value = customInput.value;
+        if (!value || value.trim() === '') {
+            showError('Enter an extension.');
+            return;
+        }
+        try {
+            const res = await fetch('/api/v1/extensions/custom', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ extension: value })
+            });
+            if (res.ok) {
+                customInput.value = '';
+                await loadCustom();
+            } else {
+                const err = await res.json();
+                showError(err.message || 'Failed to add.');
+            }
+        } catch (err) {
+            showError('Network error.');
+        }
+    });
+
+    Promise.all([loadFixed(), loadCustom()]);
+</script>
+</body>
+</html>
