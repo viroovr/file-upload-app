@@ -6,8 +6,8 @@ import com.task.fileuploadapp.domain.CustomBlockedExtension;
 import com.task.fileuploadapp.domain.FixedExtensionPolicy;
 import com.task.fileuploadapp.service.ExtensionPolicyService;
 import com.task.fileuploadapp.service.exception.BadRequestException;
-import com.task.fileuploadapp.web.dto.AddCustomRequest;
-import com.task.fileuploadapp.web.dto.CustomExtensionDto;
+import com.task.fileuploadapp.web.dto.AddCustomRequestDto;
+import com.task.fileuploadapp.web.dto.CustomExtensionResponseDto;
 import com.task.fileuploadapp.web.dto.FixedExtensionResponseDto;
 import com.task.fileuploadapp.web.dto.UpdateFixedRequest;
 
@@ -41,14 +41,14 @@ public class ExtensionPolicyApiController {
     }
 
     @GetMapping("/extensions/custom")
-    public List<CustomExtensionDto> getCustomExtensions() {
+    public List<CustomExtensionResponseDto> getCustomExtensions() {
         return service.getCustomExtensions().stream()
                 .map(this::toCustomDto)
                 .toList();
     }
 
     @PostMapping("/extensions/custom")
-    public CustomExtensionDto addCustomExtension(@RequestBody AddCustomRequest request) {
+    public CustomExtensionResponseDto addCustomExtension(@RequestBody AddCustomRequestDto request) {
         if (request == null || request.getExtension() == null) {
             throw new BadRequestException("Extension is required.");
         }
@@ -61,10 +61,10 @@ public class ExtensionPolicyApiController {
         service.deleteCustomExtension(id);
     }
 
-    private CustomExtensionDto toCustomDto(CustomBlockedExtension entity) {
+    private CustomExtensionResponseDto toCustomDto(CustomBlockedExtension entity) {
         String createdAt = entity.getCreatedAt() == null
                 ? null
                 : entity.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
-        return new CustomExtensionDto(entity.getId(), entity.getExtension(), createdAt);
+        return new CustomExtensionResponseDto(entity.getId(), entity.getExtension(), createdAt);
     }
 }
