@@ -35,6 +35,32 @@
             margin: 0;
             color: var(--muted);
         }
+        .nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin: 18px 0 24px;
+        }
+        .nav button {
+            border: 1px solid #d1d5db;
+            background: #fff;
+            color: var(--ink);
+            padding: 8px 14px;
+            border-radius: 999px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+        .nav button.active {
+            border-color: var(--accent);
+            color: var(--accent);
+            box-shadow: 0 6px 16px rgba(15, 118, 110, 0.18);
+        }
+        .page {
+            display: none;
+        }
+        .page.show {
+            display: block;
+        }
         .grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -128,42 +154,134 @@
             font-size: 12px;
             color: var(--muted);
         }
+        .hero {
+            display: grid;
+            gap: 12px;
+        }
+        .hero-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        .action-btn {
+            padding: 10px 16px;
+            border-radius: 10px;
+            border: none;
+            background: var(--accent);
+            color: #fff;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .action-btn.secondary {
+            background: #1f2933;
+        }
+        .upload-form {
+            display: grid;
+            gap: 12px;
+        }
+        .upload-form input[type="file"] {
+            padding: 10px;
+            border: 1px dashed #cbd5f5;
+            border-radius: 10px;
+            background: #f8fafc;
+        }
+        .upload-status {
+            padding: 10px 12px;
+            border-radius: 8px;
+            background: #ecfeff;
+            color: #0f766e;
+            display: none;
+        }
+        .upload-status.show {
+            display: block;
+        }
     </style>
 </head>
 <body>
 <div class="container">
     <header>
-        <h1>Blocked Extension Policy</h1>
-        <p>Toggle fixed extensions and manage custom extensions in one place.</p>
+        <h1>File Upload Console</h1>
+        <p>Upload files safely and manage blocked extensions.</p>
     </header>
 
-    <div class="grid">
-        <section class="card">
-            <h2>Fixed Extensions</h2>
-            <div class="fixed-list" id="fixedList"></div>
-            <p class="info">Fixed extensions are not shown in the custom list.</p>
-        </section>
-
-        <section class="card">
-            <h2>Custom Extensions</h2>
-            <div class="custom-input">
-                <input id="customInput" type="text" maxlength="20" placeholder="e.g. zip" />
-                <button id="addCustomButton">Add</button>
-            </div>
-            <div class="muted" id="customCount">0 / 200</div>
-            <div class="custom-list" id="customList"></div>
-            <div class="status" id="statusBox"></div>
-        </section>
+    <div class="nav">
+        <button class="nav-btn active" data-target="homeSection">Home</button>
+        <button class="nav-btn" data-target="uploadSection">Upload</button>
+        <button class="nav-btn" data-target="policySection">Blocked Extensions</button>
     </div>
+
+    <section class="page show" id="homeSection">
+        <div class="card hero">
+            <h2>Welcome</h2>
+            <p class="muted">Use the quick actions below to upload files or manage the blocked list.</p>
+            <div class="hero-actions">
+                <button class="action-btn" data-target="uploadSection">Upload a file</button>
+                <button class="action-btn secondary" data-target="policySection">Block extensions</button>
+            </div>
+        </div>
+    </section>
+
+    <section class="page" id="uploadSection">
+        <div class="card">
+            <h2>Upload File</h2>
+            <form class="upload-form" id="uploadForm">
+                <input id="uploadInput" type="file" />
+                <button class="action-btn" type="submit">Upload to /api/v1/upload</button>
+                <div class="upload-status" id="uploadStatus"></div>
+            </form>
+            <p class="info">Max size: 10MB. Blocked extensions will be rejected by the server.</p>
+        </div>
+    </section>
+
+    <section class="page" id="policySection">
+        <div class="grid">
+            <section class="card">
+                <h2>Fixed Extensions</h2>
+                <div class="fixed-list" id="fixedList"></div>
+                <p class="info">Fixed extensions are not shown in the custom list.</p>
+            </section>
+
+            <section class="card">
+                <h2>Custom Extensions</h2>
+                <div class="custom-input">
+                    <input id="customInput" type="text" maxlength="20" placeholder="e.g. zip" />
+                    <button id="addCustomButton">Add</button>
+                </div>
+                <div class="muted" id="customCount">0 / 200</div>
+                <div class="custom-list" id="customList"></div>
+                <div class="status" id="statusBox"></div>
+            </section>
+        </div>
+    </section>
 </div>
 
 <script>
+    const navButtons = document.querySelectorAll('.nav-btn');
+    const actionButtons = document.querySelectorAll('.action-btn[data-target]');
+    const pages = document.querySelectorAll('.page');
     const fixedList = document.getElementById('fixedList');
     const customList = document.getElementById('customList');
     const customCount = document.getElementById('customCount');
     const statusBox = document.getElementById('statusBox');
     const customInput = document.getElementById('customInput');
     const addCustomButton = document.getElementById('addCustomButton');
+    const uploadForm = document.getElementById('uploadForm');
+    const uploadInput = document.getElementById('uploadInput');
+    const uploadStatus = document.getElementById('uploadStatus');
+    const MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
+
+    function setActiveNav(targetId) {
+        navButtons.forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.target === targetId);
+        });
+    }
+
+    function showSection(targetId) {
+        pages.forEach(page => {
+            page.classList.toggle('show', page.id === targetId);
+        });
+        setActiveNav(targetId);
+    }
 
     function showError(message) {
         statusBox.textContent = message;
@@ -257,6 +375,59 @@
         } catch (err) {
             showError('Network error.');
         }
+    });
+
+    function showUploadStatus(message, isError) {
+        uploadStatus.textContent = message;
+        uploadStatus.style.background = isError ? '#fef2f2' : '#ecfeff';
+        uploadStatus.style.color = isError ? '#b91c1c' : '#0f766e';
+        uploadStatus.classList.add('show');
+        setTimeout(() => uploadStatus.classList.remove('show'), 5000);
+    }
+
+    uploadForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (!uploadInput.files || uploadInput.files.length === 0) {
+            showUploadStatus('Select a file to upload.', true);
+            return;
+        }
+        if (uploadInput.files[0].size > MAX_UPLOAD_BYTES) {
+            showUploadStatus('File size exceeds 10MB. Upload not allowed.', true);
+            return;
+        }
+        const formData = new FormData();
+        formData.append('file', uploadInput.files[0]);
+        try {
+            const res = await fetch('/api/v1/upload', {
+                method: 'POST',
+                body: formData
+            });
+            if (res.ok) {
+                const text = await res.text();
+                showUploadStatus(text || 'Upload complete.', false);
+                uploadInput.value = '';
+            } else {
+                let message = 'Upload failed.';
+                try {
+                    const err = await res.json();
+                    message = err.message || message;
+                } catch (e) {
+                    const text = await res.text();
+                    message = text || message;
+                }
+                showUploadStatus(message, true);
+            }
+        } catch (err) {
+            showUploadStatus('Network error.', true);
+        }
+    });
+
+    navButtons.forEach(btn => {
+        btn.addEventListener('click', () => showSection(btn.dataset.target));
+    });
+
+    actionButtons.forEach(btn => {
+        btn.addEventListener('click', () => showSection(btn.dataset.target));
     });
 
     Promise.all([loadFixed(), loadCustom()]);
