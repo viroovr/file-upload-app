@@ -1,6 +1,9 @@
 package com.task.fileuploadapp.web;
 
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.task.fileuploadapp.domain.CustomBlockedExtension;
 import com.task.fileuploadapp.domain.FixedExtensionPolicy;
@@ -11,6 +14,9 @@ import com.task.fileuploadapp.web.dto.CustomExtensionResponseDto;
 import com.task.fileuploadapp.web.dto.FixedExtensionResponseDto;
 import com.task.fileuploadapp.web.dto.UpdateFixedRequest;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
@@ -66,5 +72,23 @@ public class ExtensionPolicyApiController {
                 ? null
                 : entity.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME);
         return new CustomExtensionResponseDto(entity.getId(), entity.getExtension(), createdAt);
+    }
+
+    @PostMapping(path = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<String> uploadFile(
+        @RequestParam("file") MultipartFile file
+    ) throws IOException {
+        String filename = file.getOriginalFilename();
+
+        if (filename == null || !filename.contains(".")) {
+            throw new BadRequestException("File has no extension.");
+        }
+        String ext = filename.substring(filename.lastIndexOf('.'));
+        if (service.isBlocked(ext)) {
+            throw new BadRequestException("Blocked extension: " + ext);
+        }
+        Path temp = Files.createTempFile("upload-", "-" + filename.replaceAll("[^a-zA-Z0-9._-]", "_"));
+        file.transferTo(temp);
+        return ResponseEntity.ok("Uploaded to: " + temp.toAbsolutePath());
     }
 }
