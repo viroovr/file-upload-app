@@ -81,6 +81,21 @@ public class ExtensionPolicyService {
         customRepository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    public boolean isBlocked(String rawExtension) {
+        String normalized = ExtensionNormalizer.normalize(rawExtension);
+        if (normalized.isEmpty()) {
+            return false;
+        }
+        if (!ExtensionNormalizer.isValid(normalized)) {
+            return true;
+        }
+        if (fixedRepository.findById(normalized).map(FixedExtensionPolicy::isEnabled).orElse(false)) {
+            return true;
+        }
+        return customRepository.existsByExtension(normalized);
+    }
+
     private String normalizeOrThrow(String rawExtension) {
         String normalized = ExtensionNormalizer.normalize(rawExtension);
         if (!ExtensionNormalizer.isValid(normalized)) {
