@@ -8,6 +8,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.task.fileuploadapp.domain.CustomBlockedExtension;
 import com.task.fileuploadapp.domain.FixedExtensionPolicy;
 import com.task.fileuploadapp.service.ExtensionPolicyService;
+import com.task.fileuploadapp.service.FileSignatureChecker;
 import com.task.fileuploadapp.service.exception.BadRequestException;
 import com.task.fileuploadapp.web.dto.AddCustomRequestDto;
 import com.task.fileuploadapp.web.dto.CustomExtensionResponseDto;
@@ -86,6 +87,10 @@ public class ExtensionPolicyApiController {
         String ext = filename.substring(filename.lastIndexOf('.'));
         if (service.isBlocked(ext)) {
             throw new BadRequestException("Blocked extension: " + ext);
+        }
+        if (FileSignatureChecker.isExecutableMime(file.getContentType())
+                || FileSignatureChecker.looksExecutable(file)) {
+            throw new BadRequestException("Potential executable content detected.");
         }
         Path temp = Files.createTempFile("upload-", "-" + filename.replaceAll("[^a-zA-Z0-9._-]", "_"));
         file.transferTo(temp);
