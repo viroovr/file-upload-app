@@ -1,6 +1,7 @@
 ﻿FROM eclipse-temurin:17-jdk AS build
 WORKDIR /app
-COPY gradlew gradlew.bat gradle/ build.gradle settings.gradle gradle.properties ./
+COPY gradlew gradlew.bat build.gradle settings.gradle gradle.properties ./
+COPY gradle/wrapper ./gradle/wrapper
 COPY src ./src
 RUN chmod +x gradlew
 RUN ./gradlew bootJar --no-daemon
